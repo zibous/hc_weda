@@ -1,0 +1,69 @@
+# Sainlogic WS3500 Wetterstation Konfiguration
+device:
+  name: "Wetterstation Garten"
+  type: "sainlogic-ws3500"
+  device_id: "ips-ws3500"
+  model: "WS3500"
+  manufacturer: "SAINLOGIC HIGH TECH INNOVATION CO., LIMITED"
+  location: "Garten"
+  latitude: 47.4594353
+  longitude: 9.6361833
+  enabled: true  # Kann über .env DEVICE_SAINLOGIC_WS3500_ENABLED überschrieben werden
+
+datasource:
+  type: "http_receiver"  # Empfängt HTTP GET Requests von Wetterstation
+  url: "${DEVICE_WETTERSTATION_HTTP_URL}"  # /weatherstation
+  port: "${DEVICE_WETTERSTATION_HTTP_PORT}"  # 8089
+  interval: 60  # Sekunden (Watchdog-Check)
+  timeout: 900  # 15 Min ohne Daten = Warnung
+  format: "ecowitt"  # Datenformat (Fahrenheit, Inches, MPH)
+
+mqtt:
+  base_topic: "hc_weda/wetterstation"
+  lwt_topic: "hc_weda/wetterstation/LWT"
+  discovery_prefix: "homeassistant"
+  
+  # Mapping: interner_name -> mqtt_name
+  # Wenn mqtt_name weggelassen wird, wird interner_name verwendet
+  publish_fields:
+    device_id: geraete_id
+    device_name: geraete_name
+    timestamp: zeitstempel
+    date: datum
+    time: uhrzeit
+    source: quelle
+    # Temperatur
+    temp_c: aussentemperatur_c
+    temp_f: aussentemperatur_f
+    feels_like_c: gefuehlte_temperatur_c
+    indoor_temp_c: innentemperatur_c
+    dewpoint_c: taupunkt_c
+    windchill_c: windchill_c
+    # Luftfeuchte
+    humidity: luftfeuchte_prozent
+    indoor_humidity: innen_luftfeuchte_prozent
+    # Wind
+    wind_speed_kmh: windgeschwindigkeit_kmh
+    wind_speed_mph: windgeschwindigkeit_mph
+    wind_gust_kmh: windboen_kmh
+    wind_dir_deg: windrichtung_grad
+    wind_dir_text: windrichtung_text
+    beaufort: beaufort_skala
+    beaufort_text: beaufort_text
+    # Regen
+    rain_rate_mmh: regenrate_mmh
+    rain_daily_mm: regen_tag_mm
+    rain_weekly_mm: regen_woche_mm
+    rain_monthly_mm: regen_monat_mm
+    # Luftdruck
+    pressure_hpa: luftdruck_hpa
+    pressure_inhg: luftdruck_inhg
+    abs_pressure_hpa: abs_luftdruck_hpa
+    # Solar / UV
+    solar_radiation: solarstrahlung_wm2
+    solar_klux: solarstrahlung_klux
+    uv_index: uv_index
+    # Raumklima
+    temp_diff_c: temp_differenz_c
+    climate_advice: raumklima_empfehlung
+    frost_text: frost_warnung

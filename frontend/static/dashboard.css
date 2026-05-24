@@ -1,0 +1,720 @@
+/* ============================================================
+   Dashboard CSS – Wetterstation (v2 – Gauge-Kacheln)
+   ============================================================ */
+
+:root {
+  --bg: #0f1117;
+  --bg2: #1a1d27;
+  --bg3: #22263a;
+  --border: #2e3350;
+  --text: #e2e8f0;
+  --text-muted: #8892a4;
+  --accent-blue: #3b82f6;
+  --accent-teal: #14b8a6;
+  --accent-green: #22c55e;
+  --accent-orange: #f97316;
+  --accent-yellow: #eab308;
+  --accent-purple: #a855f7;
+  --accent-red: #ef4444;
+  --radius: 14px;
+}
+
+body.light {
+  --bg: #eef2f7;
+  --bg2: #ffffff;
+  --bg3: #e8edf3;
+  --border: #d0d7e3;
+  --text: #1a202c;
+  --text-muted: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* HEADER CONTROLS */
+#theme-toggle {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  line-height: 1;
+  transition: background .2s;
+}
+
+#theme-toggle:hover {
+  background: var(--border);
+}
+
+#bg-picker {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0;
+  cursor: pointer;
+  background: none;
+  -webkit-appearance: none;
+}
+
+#bg-picker::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+#bg-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+/* HEADER */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.station-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-blue);
+  margin-right: 12px;
+}
+
+.station-meta {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  display: inline-block;
+}
+
+.status-dot.online {
+  background: var(--accent-green);
+  box-shadow: 0 0 6px var(--accent-green);
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 10px 24px 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  border-bottom: 3px solid transparent;
+  transition: color .2s, border-color .2s;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--accent-blue);
+  border-bottom-color: var(--accent-blue);
+}
+
+/* TAB CONTENT */
+.tab-content {
+  display: none;
+  padding: 20px 24px;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* ============================================================
+   CARD GRID – Gauge-Style Kacheln
+   ============================================================ */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px 14px;
+  position: relative;
+  transition: transform .15s, box-shadow .15s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .25);
+}
+
+/* Top row: Label links, Icon rechts */
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.card-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: .3px;
+}
+
+.card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: var(--bg3);
+  flex-shrink: 0;
+}
+
+/* Hauptwert + Bewertung */
+.card-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.card-value {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.unit {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+/* Subtext */
+.card-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.card-sub b {
+  color: var(--text);
+}
+
+/* ── Skala-Balken (Segment-Bar) ── */
+.scale-bar {
+  display: flex;
+  gap: 3px;
+  margin-top: 10px;
+}
+
+.scale-bar .seg {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bg3);
+  transition: background .3s;
+}
+
+.scale-bar .seg.active {
+  background: var(--accent-blue);
+}
+
+.scale-bar .seg.active.green {
+  background: var(--accent-green);
+}
+
+.scale-bar .seg.active.yellow {
+  background: var(--accent-yellow);
+}
+
+.scale-bar .seg.active.orange {
+  background: var(--accent-orange);
+}
+
+.scale-bar .seg.active.red {
+  background: var(--accent-red);
+}
+
+.scale-bar .seg.active.teal {
+  background: var(--accent-teal);
+}
+
+.scale-bar .seg.active.purple {
+  background: var(--accent-purple);
+}
+
+.scale-bar .seg.active.blue {
+  background: var(--accent-blue);
+}
+
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  padding: 0 1px;
+}
+
+/* ── Progress-Bar (einfacher Balken) ── */
+.progress-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bg3);
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.progress-bar .fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+
+/* ── Min/Max Zeile ── */
+.card-minmax {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.card-minmax span {
+  white-space: nowrap;
+}
+
+.card-minmax .val {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Trend-Pfeil ── */
+.card-trend {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1;
+  margin-left: auto;
+}
+
+.card-trend.up {
+  color: var(--accent-red);
+}
+
+.card-trend.down {
+  color: var(--accent-blue);
+}
+
+/* ── Kompass (Wind) ── */
+.compass-card {
+  min-height: 200px;
+}
+
+.compass-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.compass-rose {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg3);
+}
+
+.compass-n,
+.compass-s,
+.compass-w,
+.compass-e {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.compass-n {
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-s {
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-w {
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-e {
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-needle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 36px;
+  margin-left: -1.5px;
+  margin-top: -32px;
+  transform-origin: bottom center;
+  background: linear-gradient(to bottom, var(--accent-red) 50%, var(--text-muted) 50%);
+  border-radius: 2px;
+}
+
+.card-value-sm {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 4px 0 2px;
+  text-align: center;
+}
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+.chart-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chart-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 260px;
+}
+
+.chart-wrap-sm {
+  height: 180px;
+}
+
+/* Desktop: Temperaturverlauf größer */
+@media (min-width: 768px) {
+  #tab-current .chart-wrap {
+    height: 360px;
+  }
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.chart-section.half {
+  margin-bottom: 0;
+}
+
+/* FILTER BAR */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.filter-bar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.filter-bar input[type="date"] {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity .2s;
+}
+
+.btn-primary:hover {
+  opacity: .85;
+}
+
+.btn-preset,
+.btn-preset-stats {
+  background: var(--bg3);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: color .2s, border-color .2s;
+}
+
+.btn-preset:hover,
+.btn-preset-stats:hover {
+  color: var(--text);
+  border-color: var(--accent-blue);
+}
+
+.btn-preset.active,
+.btn-preset-stats.active {
+  background: var(--accent-blue);
+  color: #fff;
+  border-color: var(--accent-blue);
+}
+
+/* TABLE */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th {
+  text-align: left;
+  padding: 8px 10px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+tr:hover td {
+  background: var(--bg3);
+}
+
+/* FOOTER */
+footer {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-muted);
+  font-size: 11px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+
+/* SUMMARY BAR */
+.summary-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.summary-item {
+  text-align: center;
+}
+
+.summary-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.summary-value {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 2px 0;
+}
+
+.summary-detail {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* FORECAST */
+/* Stündliche Vorhersage: horizontale Scroll-Leiste */
+.hour-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.hour-strip::-webkit-scrollbar {
+  height: 6px;
+}
+
+.hour-strip::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hour-strip::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.hh {
+  flex: 0 0 60px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 4px;
+  text-align: center;
+  transition: background .2s;
+}
+
+.hh:hover {
+  background: var(--border);
+}
+
+.hh .hh-time {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.hh .hh-icon {
+  font-size: 16px;
+  margin: 3px 0 2px;
+  line-height: 1;
+}
+
+.hh .hh-temp {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.hh .hh-rain {
+  color: var(--accent-blue);
+  font-size: 9px;
+  margin-top: 1px;
+}
+
+.hh.now {
+  border-color: var(--accent-blue);
+  background: rgba(59, 130, 246, .12);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
+
+  .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .forecast-hours {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  }
+}

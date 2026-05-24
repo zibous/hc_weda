@@ -1,0 +1,36 @@
+services:
+  hc_weda:
+    build: .
+    container_name: hc_weda
+    restart: unless-stopped
+
+    ports:
+      - "8090:5045"  # Dashboard → http://10.1.1.119:8090/
+      - "8089:5045"  # Weather Receiver → http://10.1.1.119:8089/weatherstation
+
+    volumes:
+      - ${PWD}/data:/app/data
+      - ${PWD}/config:/app/config
+      - ${PWD}/frontend:/app/frontend
+      - ${PWD}/logs:/app/logs
+
+    env_file:
+      - .env
+
+    environment:
+      - TZ=Europe/Vaduz
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5045/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
