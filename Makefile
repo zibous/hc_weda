@@ -166,6 +166,12 @@ status-app: ## Check if app is running
 graph:
 	pyreverse app -o png
 
+git-update: ## Git Forgejo Update durchführen
+	git remote set-url origin http://10.1.1.119:3043/peter/hc_weda.git
+	git add -A
+	git commit -m "Update am $$(date +'%Y-%m-%d %H:%M')" || true
+	git push -u origin main
+
 # ---------------------------------------------------------
 # Help
 # ---------------------------------------------------------
