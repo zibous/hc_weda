@@ -50,17 +50,17 @@ Chart.defaults.locale = 'de-DE';
 const CHART_OPTS_BASE = {
   responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
   plugins: { legend: { labels: { boxWidth: 12, padding: 14 } }, tooltip: { backgroundColor: '#1a1d27', borderColor: '#2e3350', borderWidth: 1, padding: 10 } },
-  scales: { 
-    x: { 
-      type: 'time', 
-      time: { 
-        tooltipFormat: 'dd.MM.yyyy HH:mm', 
-        displayFormats: { 
-          hour: 'HH:mm', 
-          day: 'dd.MM', 
-          month: 'MMM yyyy' 
+  scales: {
+    x: {
+      type: 'time',
+      time: {
+        tooltipFormat: 'dd.MM.yyyy HH:mm',
+        displayFormats: {
+          hour: 'HH:mm',
+          day: 'dd.MM',
+          month: 'MMM yyyy'
         }
-      }, 
+      },
       grid: { color: C.grid },
       ticks: {
         maxRotation: 45,
@@ -69,8 +69,8 @@ const CHART_OPTS_BASE = {
         maxTicksLimit: 12,
         source: 'auto'
       }
-    }, 
-    y: { grid: { color: C.grid } } 
+    },
+    y: { grid: { color: C.grid } }
   },
 };
 function timeOpts(extra = {}) { return JSON.parse(JSON.stringify({ ...CHART_OPTS_BASE, ...extra })); }
@@ -480,17 +480,17 @@ function initHistoryTab() {
   document.getElementById('range-from').value = isoAgo(7);
   document.getElementById('range-to').value = isoToday();
   document.getElementById('btn-load-range').addEventListener('click', loadRange);
-  document.querySelectorAll('.btn-preset').forEach(b => { 
-    b.addEventListener('click', () => { 
+  document.querySelectorAll('.btn-preset').forEach(b => {
+    b.addEventListener('click', () => {
       // Entferne "active" von allen Buttons
       document.querySelectorAll('.btn-preset').forEach(btn => btn.classList.remove('active'));
       // Setze "active" auf geklickten Button
       b.classList.add('active');
-      
-      document.getElementById('range-from').value = isoAgo(+b.dataset.days); 
-      document.getElementById('range-to').value = isoToday(); 
-      loadRange(); 
-    }); 
+
+      document.getElementById('range-from').value = isoAgo(+b.dataset.days);
+      document.getElementById('range-to').value = isoToday();
+      loadRange();
+    });
   });
   // Setze 7 Tage als Standard-aktiv
   document.querySelector('.btn-preset[data-days="7"]')?.classList.add('active');
@@ -510,10 +510,10 @@ async function loadStats() {
   ]);
   const days = rows.map(r => r.day);
   const destroy = id => { if (statsCharts[id]) { statsCharts[id].destroy(); delete statsCharts[id]; } };
-  
+
   // Berechne Zeitraum in Tagen
   const daysDiff = Math.round((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24));
-  
+
   // Dynamische X-Achsen-Konfiguration basierend auf Zeitraum
   const statsOpts = JSON.parse(JSON.stringify(CHART_OPTS_BASE));
   if (daysDiff > 180) {
@@ -530,7 +530,7 @@ async function loadStats() {
     statsOpts.scales.x.time.unit = 'day';
     statsOpts.scales.x.ticks.maxTicksLimit = 15;
   }
-  
+
   destroy('st');
   statsCharts.st = new Chart(document.getElementById('chart-stats-temp'), {
     type: 'line', data: {
@@ -541,19 +541,19 @@ async function loadStats() {
       ]
     }, options: statsOpts
   });
-  
+
   // Bar-Charts mit gleicher X-Achsen-Konfiguration
   const barOpts = JSON.parse(JSON.stringify(statsOpts));
   barOpts.plugins.legend = { display: false };
   barOpts.scales.y.title = { display: true, text: 'mm', color: C.muted };
-  
-  destroy('sr'); 
+
+  destroy('sr');
   statsCharts.sr = new Chart(document.getElementById('chart-stats-rain'), {
     type: 'bar',
     data: { datasets: [{ data: rows.map(r => ({ x: r.day, y: r.rain_day ?? 0 })), backgroundColor: C.blue + 'cc', borderColor: C.blue, borderWidth: 1 }] },
     options: barOpts
   });
-  
+
   destroy('sw');
   const windOpts = JSON.parse(JSON.stringify(statsOpts));
   windOpts.plugins.legend = { display: false };
@@ -563,9 +563,9 @@ async function loadStats() {
     data: { datasets: [{ data: rows.map(r => ({ x: r.day, y: r.wind_max ?? 0 })), backgroundColor: C.green + 'cc', borderColor: C.green, borderWidth: 1 }] },
     options: windOpts
   });
-  
-  destroy('sm'); 
-  const mM = monthly.map(r => r.month).reverse(); 
+
+  destroy('sm');
+  const mM = monthly.map(r => r.month).reverse();
   statsCharts.sm = makeBar(document.getElementById('chart-monthly-rain'), mM, monthly.map(r => r.rain_total ?? 0).reverse(), C.teal, 'mm');
   document.getElementById('stats-tbody').innerHTML = rows.slice().reverse().map(r => `<tr><td>${r.day}</td><td style="color:${C.teal}">${r.temp_min ?? '–'}</td><td style="color:${C.red}">${r.temp_max ?? '–'}</td><td>${r.temp_avg ?? '–'}</td><td>${r.hum_min ?? '–'}</td><td>${r.hum_max ?? '–'}</td><td>${r.wind_max ?? '–'}</td><td>${r.gust_max ?? '–'}</td><td style="color:${C.blue}">${r.rain_day ?? '–'}</td><td>${r.solar_max ?? '–'}</td><td>${r.uv_max ?? '–'}</td></tr>`).join('');
 }
@@ -573,18 +573,18 @@ function initStatsTab() {
   document.getElementById('stats-from').value = isoAgo(30);
   document.getElementById('stats-to').value = isoToday();
   document.getElementById('btn-load-stats').addEventListener('click', loadStats);
-  document.querySelectorAll('.btn-preset-stats').forEach(b => { 
-    b.addEventListener('click', () => { 
+  document.querySelectorAll('.btn-preset-stats').forEach(b => {
+    b.addEventListener('click', () => {
       // Entferne "active" von allen Buttons
       document.querySelectorAll('.btn-preset-stats').forEach(btn => btn.classList.remove('active'));
       // Setze "active" auf geklickten Button
       b.classList.add('active');
-      
+
       const days = +b.dataset.days;
-      document.getElementById('stats-from').value = isoAgo(days); 
-      document.getElementById('stats-to').value = isoToday(); 
-      loadStats(); 
-    }); 
+      document.getElementById('stats-from').value = isoAgo(days);
+      document.getElementById('stats-to').value = isoToday();
+      loadStats();
+    });
   });
   // Setze 30 Tage als Standard-aktiv
   document.querySelector('.btn-preset-stats[data-days="30"]')?.classList.add('active');
@@ -608,5 +608,12 @@ const savedTab = localStorage.getItem('activeTab');
 if (savedTab && savedTab !== 'current') {
   switchTab(savedTab);
 }
+
+// ─── App Info ───────────────────────────────────────────
+console.info(
+  '%c ⚡ Wetterdaten Dashboard %c ESM v2.3.0 ',
+  'color:#fff;background:#e94560;padding:4px 8px;border-radius:4px 0 0 4px;font-size:11px',
+  'color:#1a1a2e;background:#a8dadc;padding:4px 8px;border-radius:0 4px 4px 0;font-size:11px'
+);
 
 setInterval(async () => { await refreshCurrent(); await initCurrentTab(); }, 60_000);
