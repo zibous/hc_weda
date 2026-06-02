@@ -58,3 +58,9 @@ DB_PATH = os.getenv("DB_PATH", "data/weather.db")
 OPENWEATHER_LAT = float(os.getenv("OPENWEATHER_LAT", "47.1410"))
 OPENWEATHER_LON = float(os.getenv("OPENWEATHER_LON", "9.5209"))
 OPENWEATHER_UNITS = os.getenv("OPENWEATHER_UNITS", "metric")
+
+# ----------- KPI Dashboard -----------
+KPI_APP_ID = os.getenv("KPI_APP_ID", "hc_weda")
+KPI_APP_NAME = os.getenv("KPI_APP_NAME", "Wetterstation")
+KPI_ICON = os.getenv("KPI_ICON", "thermostat")
+KPI_URL = os.getenv("KPI_URL", "http://nuc:5021")

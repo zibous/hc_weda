@@ -18,6 +18,9 @@ run: ## Startet lokal mit uvicorn
 dev: ## Startet lokal mit auto-reload
 	@$(PYTHON) -m uvicorn app.main:app --host 0.0.0.0 --port 5045 --reload
 
+apptest: ## Einfacher test ohne datenaubereitung
+	@$(PYTHON) -m uvicorn app.main:app --host 0.0.0.0 --port 5049 --reload --lifespan off --no-access-log --reload-exclude "*.db"
+
 # ---------------------------------------------------------
 # Docker
 # ---------------------------------------------------------

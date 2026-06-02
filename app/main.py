@@ -7,6 +7,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.devices import router as devices_router
 from app.api.routes.health import router as health_router
+from app.api.routes.kpi import router as kpi_router
 from app.api.routes.weather_receiver import init_weather_alerts
 from app.api.routes.weather_receiver import router as weather_receiver_router
 from app.core import ha_discovery, mqtt
@@ -198,6 +199,7 @@ app.add_middleware(NoCacheMiddleware)
 app.include_router(health_router, prefix="/api", tags=["health"])
 app.include_router(devices_router, prefix="/api", tags=["devices"])
 app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
+app.include_router(kpi_router, prefix="/api", tags=["kpi"])
 app.include_router(weather_receiver_router, tags=["weather"])  # No prefix for /weatherstation
 
 # Static files (Frontend) - MUSS NACH den API-Routes kommen
