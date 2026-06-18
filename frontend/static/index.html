@@ -5,7 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wetterstation Garten – Dashboard</title>
-  <link rel="stylesheet" href="static/dashboard.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://w3.org' viewBox='0 0 24 24' fill='none' stroke='%230071e3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'></rect><path d='M7 10h4M13 14h4M7 14l3-3M14 13l3-3M3 9h18M3 15h18'></path></svg>">
+  <link rel="stylesheet" href="static/css/dashboard.bundle.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -22,8 +23,9 @@
       <span class="status-dot online"></span>
       <span id="last-update">–</span>
       <span class="db-info">0 Messungen &nbsp;|&nbsp; seit –</span>
-      <input type="color" id="bg-picker" title="Hintergrundfarbe" value="#0f1117">
-      <button id="theme-toggle" title="Tag/Nacht umschalten">🌙</button>
+      <input type="color" id="bg-picker" title="Hintergrundfarbe" value="#0f1117" style="width:0;height:0;padding:0;border:0;opacity:0;position:absolute;">
+      <button id="bg-picker-btn" title="Hintergrundfarbe"></button>
+      <button id="theme-toggle" title="Tag/Nacht umschalten"></button>
     </div>
   </header>
 
@@ -33,6 +35,8 @@
     <button class="tab" data-tab="forecast">Vorhersage</button>
     <button class="tab" data-tab="history">Verlauf</button>
     <button class="tab" data-tab="stats">Statistik</button>
+    <div class="tabs-spacer"></div>
+    <div class="ds-container" id="dateSelectorNav"></div>
   </nav>
 
   <!-- ═══════════════ TAB: AKTUELL ═══════════════ -->
@@ -258,15 +262,6 @@
 
   <!-- ═══════════════ TAB: VERLAUF ═══════════════ -->
   <div id="tab-history" class="tab-content">
-    <div class="filter-bar">
-      <label>Von <input type="date" id="range-from"></label>
-      <label>Bis <input type="date" id="range-to"></label>
-      <button id="btn-load-range" class="btn-primary">Laden</button>
-      <button class="btn-preset" data-days="7">7 Tage</button>
-      <button class="btn-preset" data-days="30">30 Tage</button>
-      <button class="btn-preset" data-days="90">90 Tage</button>
-      <button class="btn-preset" data-days="365">1 Jahr</button>
-    </div>
     <div class="chart-section">
       <div class="chart-header"><span>Temperatur (°C)</span></div>
       <div class="chart-wrap"><canvas id="chart-range-temp"></canvas></div>
@@ -295,14 +290,6 @@
 
   <!-- ═══════════════ TAB: STATISTIK ═══════════════ -->
   <div id="tab-stats" class="tab-content">
-    <div class="filter-bar">
-      <label>Von <input type="date" id="stats-from"></label>
-      <label>Bis <input type="date" id="stats-to"></label>
-      <button id="btn-load-stats" class="btn-primary">Laden</button>
-      <button class="btn-preset-stats" data-days="30">30 Tage</button>
-      <button class="btn-preset-stats" data-days="90">90 Tage</button>
-      <button class="btn-preset-stats" data-days="365">1 Jahr</button>
-    </div>
     <div class="chart-row">
       <div class="chart-section half">
         <div class="chart-header"><span>Tages-Temperatur Min/Max/Avg (°C)</span></div>
@@ -354,7 +341,7 @@
     // Auto-detect: Wenn URL /dashboardwetter/ enthält, Prefix setzen
     window.__URL_PREFIX = window.location.pathname.includes('/dashboardwetter') ? '/dashboardwetter' : '';
   </script>
-  <script src="static/dashboard.js"></script>
+  <script src="static/js/dashboard.bundle.js"></script>
 </body>
 
 </html>
