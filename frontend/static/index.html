@@ -15,21 +15,24 @@
 <body>
 
   <header>
-    <div class="header-left">
-      <span class="station-name">Wetterstation Garten</span>
-      <span class="station-meta">Sainlogic WS3500 &nbsp;|&nbsp; hc_weda v2</span>
+    <div class="header-row">
+      <h1 class="station-name">Wetterstation Garten</h1>
+      <div class="header-controls">        
+        <button id="theme-toggle" title="Tag/Nacht umschalten"></button>
+      </div>
     </div>
-    <div class="header-right">
-      <span class="status-dot online"></span>
-      <span id="last-update">–</span>
-      <span class="db-info">0 Messungen &nbsp;|&nbsp; seit –</span>
-      <input type="color" id="bg-picker" title="Hintergrundfarbe" value="#0f1117" style="width:0;height:0;padding:0;border:0;opacity:0;position:absolute;">
-      <button id="bg-picker-btn" title="Hintergrundfarbe"></button>
-      <button id="theme-toggle" title="Tag/Nacht umschalten"></button>
+    <div class="header-row">
+      <span class="station-meta">Sainlogic WS3500 &nbsp;|&nbsp; hc_weda v2</span>
+      <span class="station-status">
+        <span class="status-dot online"></span>
+        <span id="last-update">–</span>
+        <span class="db-info">0 Messungen &nbsp;|&nbsp; seit –</span>
+      </span>
     </div>
   </header>
 
   <nav class="tabs">
+    <span class="tabs-label">Daten für:</span>
     <button class="tab active" data-tab="current">Aktuell</button>
     <button class="tab" data-tab="today">Heute</button>
     <button class="tab" data-tab="forecast">Vorhersage</button>

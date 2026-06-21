@@ -51,11 +51,7 @@ import { getAppleIcon } from './icons.js';
   if (pickerBtn) {
     pickerBtn.innerHTML = getAppleIcon('palette', 18, 1.0);
     pickerBtn.addEventListener('click', () => picker.click());
-  }
-  picker.addEventListener('input', e => {
-    document.body.style.background = e.target.value;
-    localStorage.setItem('dashboardBg', e.target.value);
-  });
+  }  
 })();
 
 // ── DateSelector State ──────────────────────────────────────
