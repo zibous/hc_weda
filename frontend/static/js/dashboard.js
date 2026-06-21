@@ -14,44 +14,59 @@ import { C } from './charts.js';
 import { initCardIcons } from './card-icons.js';
 import { getAppleIcon } from './icons.js';
 
-// ── Theme Toggle ────────────────────────────────────────────
+// ── Theme Toggle & Synchronisation ──────────────────────────
 (function () {
-  const btn = document.getElementById('theme-toggle');
-  const saved = localStorage.getItem('theme') || 'dark';
-
-  function setThemeIcon(theme) {
-    // Zeige das Icon der "anderen" Seite als Hinweis wohin gewechselt wird
-    btn.innerHTML = getAppleIcon(theme === 'dark' ? 'sun' : 'moon', 18, 1.0);
-  }
+  // Synchronisierter Start über das projektweite health-theme oder Altwert
+  const saved = localStorage.getItem('health-theme') || localStorage.getItem('theme') || 'dark';
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     document.body.classList.toggle('light', theme === 'light');
-    setThemeIcon(theme);
-    Chart.defaults.color = theme === 'light' ? '#64748b' : '#8892a4';
-    Chart.defaults.borderColor = theme === 'light' ? 'rgba(0,0,0,.08)' : 'rgba(46,51,80,.6)';
+
+    // Text im Footer absolut null-pointer-sicher aktualisieren
+    const footerBtn = document.getElementById('themeToggleFooter');
+    if (footerBtn) {
+      footerBtn.innerHTML = theme === 'dark' ? '☀️ Helles Design' : '🌙 Dunkles Design';
+    }
+
+    // Chart.js defaults für beide Farbwelten optimieren
+    if (typeof Chart !== 'undefined') {
+      Chart.defaults.color = theme === 'light' ? '#64748b' : '#8892a4';
+      Chart.defaults.borderColor = theme === 'light' ? 'rgba(0,0,0,.08)' : 'rgba(46,51,80,.6)';
+
+      // Bestehende Diagramme bei Bedarf direkt aktualisieren
+      Object.values(Chart.instances || {}).forEach(chart => chart.update('none'));
+    }
   }
 
+  // Initial beim App-Start ausführen
   applyTheme(saved);
 
-  btn.addEventListener('click', () => {
+  // 🌟 FIX: Globaler Klick-Abfänger registrieren (Fehlersicher bei dynamischen DOM-Wechseln)
+  document.addEventListener('click', (event) => {
+    if (event.target && event.target.id === 'themeToggleFooter') {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      localStorage.setItem('theme', next);
+      localStorage.setItem('health-theme', next); // Projektweite Brücke
+    }
+  });
+
+  // Text-Zustand beim fertigen Laden absichern
+  document.addEventListener('DOMContentLoaded', () => {
     const current = document.documentElement.getAttribute('data-theme') || 'dark';
-    const next = current === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-    localStorage.setItem('theme', next);
+    const footerBtn = document.getElementById('themeToggleFooter');
+    if (footerBtn) {
+      footerBtn.innerHTML = current === 'dark' ? '☀️ Helles Design' : '🌙 Dunkles Design';
+    }
   });
 })();
 
-// ── Colorpicker ─────────────────────────────────────────────
+// ── Colorpicker (Bereinigt von gelöschten DOM-Elementen) ─────
 (function () {
-  const picker = document.getElementById('bg-picker');
-  const pickerBtn = document.getElementById('bg-picker-btn');
   const savedBg = localStorage.getItem('dashboardBg');
-  if (savedBg) { document.body.style.background = savedBg; picker.value = savedBg; }
-  if (pickerBtn) {
-    pickerBtn.innerHTML = getAppleIcon('palette', 18, 1.0);
-    pickerBtn.addEventListener('click', () => picker.click());
-  }  
+  if (savedBg) { document.body.style.background = savedBg; }
 })();
 
 // ── DateSelector State ──────────────────────────────────────

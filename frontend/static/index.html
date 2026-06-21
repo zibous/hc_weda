@@ -14,14 +14,17 @@
 
 <body>
 
-  <header>
-    <div class="header-row">
-      <h1 class="station-name">Wetterstation Garten</h1>
-      <div class="header-controls">        
-        <button id="theme-toggle" title="Tag/Nacht umschalten"></button>
+  <header style="padding-right: 20px;">
+    <div class="header-row" style="z-index: 2;">
+      <!-- 🌟 OPTIMIERT: Titel farblich passend zu Natur & Meteorologie (Wetter-Blau & Garten-Grün) -->
+      <h1 class="station-name" style="font-size: 2.2rem; font-weight: 700; margin: 0;">
+        <span style="color: #0ea5e9;">Wetterstation</span> <span style="color: #22c55e;">Garten</span>
+      </h1>
+      <div class="header-controls">
+        <!-- 🌟 Der alte #theme-toggle Button fliegt hier aus dem Header raus -->
       </div>
     </div>
-    <div class="header-row">
+    <div class="header-row" style="position: relative; z-index: 2; margin-top: 4px;">
       <span class="station-meta">Sainlogic WS3500 &nbsp;|&nbsp; hc_weda v2</span>
       <span class="station-status">
         <span class="status-dot online"></span>
@@ -29,10 +32,33 @@
         <span class="db-info">0 Messungen &nbsp;|&nbsp; seit –</span>
       </span>
     </div>
+
+    <!-- 🌟 OPTIMIERT: Das Wetter-Hintergrundbild (Sonne/Wolke + Windwelle + Regentropfen, 45% Deckkraft) -->
+    <div class="header-bg-wrapper" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); pointer-events: none; z-index: 1;">
+      <svg style="width: auto; height: 75px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; opacity: 0.45;" viewBox="0 0 800 200">
+
+        <!-- ☀️☁️ Sonne & Wolke links (Sonne in Gelb, Wolke transluzent) -->
+        <circle cx="130" cy="85" r="16" stroke="#eab308" stroke-width="3" fill="#eab308" fill-opacity="0.1" />
+        <path d="M 130 60 L 130 52 M 130 110 L 130 118 M 105 85 L 97 85 M 155 85 L 163 85" stroke="#eab308" stroke-width="2" />
+        <path d="M 135 95 C 135 85, 145 80, 155 80 C 165 80, 170 85, 175 80 C 185 80, 195 90, 195 100 C 195 110, 185 115, 170 115 L 135 115 C 125 115, 115 110, 115 100 C 115 90, 125 95, 135 95 Z" stroke="currentColor" fill="currentColor" fill-opacity="0.05" stroke-width="3" />
+
+        <!-- ⚡ Verbindungslinie / Windströmung (In der Textfarbe des Dashboards) -->
+        <path d="M 50 100 L 95 100 M 205 100 L 290 100 L 305 100 L 315 45 L 330 155 L 345 25 L 360 135 L 370 100 L 410 100" stroke="currentColor" stroke-width="5" />
+        <path d="M 410 100 L 460 100 L 470 65 L 485 145 L 500 35 L 515 125 L 525 100 L 590 100" stroke="currentColor" stroke-width="5" />
+
+        <!-- 💧 Drei Regentropfen rechts fallend (Frisches Wetter-Blau) -->
+        <path d="M 630 80 C 630 90, 638 98, 648 98 C 658 98, 666 90, 666 80 C 666 70, 648 45, 648 45 C 648 45, 630 70, 630 80 Z" stroke="#0ea5e9" fill="#0ea5e9" fill-opacity="0.15" stroke-width="3" />
+        <path d="M 665 110 C 665 118, 671 125, 679 125 C 687 125, 693 118, 693 110 C 693 102, 679 82, 679 82 C 679 82, 665 102, 665 110 Z" stroke="#0ea5e9" fill="#0ea5e9" fill-opacity="0.15" stroke-width="2.5" />
+        <path d="M 610 120 C 610 126, 615 131, 621 131 C 627 131, 632 126, 632 120 C 632 114, 621 98, 621 98 C 621 98, 610 114, 610 120 Z" stroke="#0ea5e9" fill="#0ea5e9" fill-opacity="0.15" stroke-width="2" />
+
+        <path d="M 710 100 L 760 100" stroke="currentColor" stroke-width="5" />
+      </svg>
+    </div>
   </header>
 
+
   <nav class="tabs">
-    <span class="tabs-label">Daten für:</span>
+    <span class="tabs-label"></span>
     <button class="tab active" data-tab="current">Aktuell</button>
     <button class="tab" data-tab="today">Heute</button>
     <button class="tab" data-tab="forecast">Vorhersage</button>
@@ -338,7 +364,12 @@
     </div>
   </div>
 
-  <footer>hc_weda v2 &nbsp;|&nbsp; Wetterstation Dashboard</footer>
+  <footer style="text-align:center; color:var(--text-muted, var(--muted, #888)); font-size:.7rem; padding:16px; user-select:none; border-top: 1px solid var(--border);">
+      Wetterstation Garten Monitor &bull; Sainlogic live
+      <span style="margin: 0 8px; color: var(--border);">|</span>
+      <span id="themeToggleFooter" style="cursor:pointer; font-weight:500; text-decoration:underline;">🌓 Design wechseln</span>
+  </footer>
+
 
   <script>
     // Auto-detect: Wenn URL /dashboardwetter/ enthält, Prefix setzen
