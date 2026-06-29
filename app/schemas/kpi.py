@@ -29,6 +29,13 @@ class KpiHero(BaseModel):
     label: str = ""  # Kontext-Zeile unter Hero-Wert
 
 
+class KpiMetric(BaseModel):
+    """Einzelne Kennzahl für die Detailansicht."""
+    label: str
+    value: str | float | int
+    unit: str = ""
+
+
 class KpiResponse(BaseModel):
     """Vollständige KPI-Antwort einer App für das Übersichts-Dashboard."""
 
@@ -41,3 +48,4 @@ class KpiResponse(BaseModel):
     hero: KpiHero
     detail: str = ""  # Zweite Info-Zeile (Min/Max/Avg etc.)
     indicator: KpiIndicator | None = None
+    metrics: list[KpiMetric] | None = None

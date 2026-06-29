@@ -6,7 +6,7 @@ from datetime import datetime
 
 from app.core.config import KPI_APP_ID, KPI_APP_NAME, KPI_ICON, KPI_URL
 from app.core.logging import setup_logger
-from app.schemas.kpi import KpiHero, KpiIndicator, KpiResponse
+from app.schemas.kpi import KpiHero, KpiIndicator, KpiMetric, KpiResponse
 from app.services.database import get_db, init_db, _db_instance
 
 log = setup_logger("kpi_service")
@@ -107,4 +107,14 @@ class KpiService:
             ),
             detail=detail,
             indicator=indicator,
+            metrics=[
+                m for m in [
+                    KpiMetric(label="Gefühlt", value=round(feels_like, 1), unit="°C") if feels_like is not None else None,
+                    KpiMetric(label="Feuchte", value=int(humidity), unit="%") if humidity is not None else None,
+                    KpiMetric(label="Wind", value=round(wind_kmh, 0), unit="km/h") if wind_kmh > 0 else None,
+                    KpiMetric(label="Regen", value=round(rain_daily, 1), unit="mm") if rain_daily > 0 else None,
+                    KpiMetric(label="Min", value=round(temp_min, 1), unit="°C") if temp_min is not None else None,
+                    KpiMetric(label="Max", value=round(temp_max, 1), unit="°C") if temp_max is not None else None,
+                ] if m is not None
+            ] or None,
         )
