@@ -41,7 +41,16 @@ class KpiService:
         feels_like = latest.get("feels_like_c")
         humidity = latest.get("humidity")
         wind_kmh = latest.get("windspeed_kmh") or latest.get("wind_speed_kmh") or 0
-        rain_daily = latest.get("daily_rain_mm") or 0
+        wind_gust = latest.get("wind_gust_kmh") or 0
+        wind_dir = latest.get("wind_dir_text") or ""
+        rain_daily = latest.get("daily_rain_mm") or latest.get("rain_daily_mm") or 0
+        pressure = latest.get("pressure_hpa") or latest.get("abs_pressure_hpa")
+        solar = latest.get("solar_radiation")
+        solar_klux = latest.get("solar_klux")
+        uv_index = latest.get("uv_index")
+        indoor_temp = latest.get("indoor_temp_c")
+        indoor_hum = latest.get("indoor_humidity")
+        dewpoint = latest.get("dewpoint_c")
 
         # Tages-Min/Max aus DB
         summary = db.get_daily_summary(today)
@@ -112,7 +121,14 @@ class KpiService:
                     KpiMetric(label="Gefühlt", value=round(feels_like, 1), unit="°C") if feels_like is not None else None,
                     KpiMetric(label="Feuchte", value=int(humidity), unit="%") if humidity is not None else None,
                     KpiMetric(label="Wind", value=round(wind_kmh, 0), unit="km/h") if wind_kmh > 0 else None,
+                    KpiMetric(label="Böen", value=round(wind_gust, 0), unit="km/h") if wind_gust > 0 else None,
+                    KpiMetric(label="Richtung", value=wind_dir) if wind_dir else None,
+                    KpiMetric(label="Luftdruck", value=round(pressure, 0), unit="hPa") if pressure else None,
                     KpiMetric(label="Regen", value=round(rain_daily, 1), unit="mm") if rain_daily > 0 else None,
+                    KpiMetric(label="Solar", value=round(solar_klux, 1), unit="klux") if solar_klux else (
+                        KpiMetric(label="Solar", value=round(solar, 0), unit="W/m²") if solar else None),
+                    KpiMetric(label="UV", value=uv_index) if uv_index is not None else None,
+                    KpiMetric(label="Innen", value=round(indoor_temp, 1), unit="°C") if indoor_temp is not None else None,
                     KpiMetric(label="Min", value=round(temp_min, 1), unit="°C") if temp_min is not None else None,
                     KpiMetric(label="Max", value=round(temp_max, 1), unit="°C") if temp_max is not None else None,
                 ] if m is not None
