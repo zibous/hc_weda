@@ -1,0 +1,272 @@
+webhooks_hc_weda_pack:
+  # ═══════════════════════════════════════════════════════════════════════
+  # Home Assistant Webhook-Vorlage für hc_weda (Wetterstation Sainlogic WS3500)
+  # ═══════════════════════════════════════════════════════════════════════
+  #
+  # Konfiguration in .env:
+  #   HA_WEBHOOK_URL=http://192.168.1.xxx:8123
+  #   HA_WEBHOOK_ID=hc_weda
+  #
+  # Verfügbare Events & Payload-Felder:
+  # ┌──────────────────────┬──────────────────────────────────────────────────────────────┐
+  # │ Event                │ Felder                                                       │
+  # ├──────────────────────┼──────────────────────────────────────────────────────────────┤
+  # │ app_start            │ devices_count, devices[]                                     │
+  # │ app_stop             │ (keine zusätzlichen)                                         │
+  # │ weather_data         │ temp_c, feels_like_c, humidity, indoor_temp_c,               │
+  # │                      │ indoor_humidity, temp_diff_c, climate_advice,                │
+  # │                      │ wind_kmh, wind_gust_kmh, wind_dir, wind_dir_text,            │
+  # │                      │ beaufort, beaufort_text, pressure_hpa,                       │
+  # │                      │ rain_daily_mm, rain_monthly_mm, solar_klux,                  │
+  # │                      │ uv_index, dewpoint_c, frost_text                             │
+  # │ weather_alert        │ alert_type, state (on/off), message, severity,               │
+  # │                      │ + spezifische Werte (temp_c, wind_kmh, etc.)                 │
+  # └──────────────────────┴──────────────────────────────────────────────────────────────┘
+  #
+  # Alle Payloads enthalten: event, app ("hc_weda"), version, timestamp
+  #
+  # weather_data wird bei JEDEM Empfang von der Wetterstation gesendet.
+  #
+  # weather_alert Typen:
+  #   - storm:       Wind > 50 km/h oder Böen > 70 km/h
+  #   - heavy_rain:  Regenrate > 10 mm/h
+  #   - frost:       Temperatur ≤ 0°C
+  #   - freeze_risk: Temperatur ≤ 3°C (aber > 0°C)
+  #
+  # Beispiel-Payload (weather_alert):
+  # {
+  #   "event": "weather_alert",
+  #   "app": "hc_weda",
+  #   "version": "2.0.0",
+  #   "timestamp": "2026-07-03T03:15:00",
+  #   "alert_type": "frost",
+  #   "state": "on",
+  #   "message": "Frost! Temperatur: -2.3°C",
+  #   "severity": "warning",
+  #   "temp_c": -2.3
+  # }
+  # ═══════════════════════════════════════════════════════════════════════
+
+
+  # ─────────────────────────────────────────────────────────────────────
+  # AUTOMATIONS (→ automations.yaml)
+  # ─────────────────────────────────────────────────────────────────────
+
+  automation:
+
+    - alias: "hc_weda Webhook Empfänger"
+      id: hc_weda_webhook
+      mode: queued
+      max: 20
+
+      trigger:
+        - platform: webhook
+          webhook_id: hc_weda
+          allowed_methods:
+            - POST
+          local_only: true
+
+      action:
+        - choose:
+
+            # ── App gestartet ──
+            - conditions:
+                - condition: template
+                  value_template: "{{ trigger.json.event == 'app_start' }}"
+              sequence:
+                - service: logbook.log
+                  data:
+                    name: hc_weda
+                    message: >-
+                      🟢 v{{ trigger.json.version | default('?') }} gestartet
+                      ({{ trigger.json.devices_count | default(0) }} Geräte)
+
+            # ── App gestoppt ──
+            - conditions:
+                - condition: template
+                  value_template: "{{ trigger.json.event == 'app_stop' }}"
+              sequence:
+                - service: logbook.log
+                  data:
+                    name: hc_weda
+                    message: "🔴 Service gestoppt"
+
+            # ── Wetter-Warnung EIN ──
+            - conditions:
+                - condition: template
+                  value_template: >-
+                    {{ trigger.json.event == 'weather_alert' and trigger.json.state == 'on' }}
+              sequence:
+                - service: persistent_notification.create
+                  data:
+                    title: >-
+                      {% if trigger.json.alert_type == 'storm' %}🌪️ Sturmwarnung
+                      {% elif trigger.json.alert_type == 'heavy_rain' %}🌧️ Starkregen
+                      {% elif trigger.json.alert_type == 'frost' %}🥶 Frost
+                      {% elif trigger.json.alert_type == 'freeze_risk' %}❄️ Frostgefahr
+                      {% else %}⚠️ Wetterwarnung{% endif %}
+                    message: "{{ trigger.json.message | default('') }}"
+                    notification_id: "weda_alert_{{ trigger.json.alert_type | default('unknown') }}"
+                - service: notify.notify
+                  data:
+                    title: >-
+                      {% if trigger.json.alert_type == 'storm' %}🌪️ Sturmwarnung
+                      {% elif trigger.json.alert_type == 'heavy_rain' %}🌧️ Starkregen
+                      {% elif trigger.json.alert_type == 'frost' %}🥶 Frost
+                      {% elif trigger.json.alert_type == 'freeze_risk' %}❄️ Frostgefahr
+                      {% else %}⚠️ Wetterwarnung{% endif %}
+                    message: "{{ trigger.json.message | default('') }}"
+
+            # ── Wetter-Warnung AUS ──
+            - conditions:
+                - condition: template
+                  value_template: >-
+                    {{ trigger.json.event == 'weather_alert' and trigger.json.state == 'off' }}
+              sequence:
+                - service: persistent_notification.dismiss
+                  data:
+                    notification_id: "weda_alert_{{ trigger.json.alert_type | default('unknown') }}"
+                - service: logbook.log
+                  data:
+                    name: hc_weda
+                    message: >-
+                      ✅ {{ trigger.json.message | default('Warnung beendet') }}
+
+          # weather_data Events werden nicht als Automation verarbeitet
+          # (zu häufig – stattdessen über Template-Sensoren)
+          default: []
+
+
+  # ─────────────────────────────────────────────────────────────────────
+  # TEMPLATE SENSOREN (→ configuration.yaml)
+  # ─────────────────────────────────────────────────────────────────────
+
+  template:
+    - trigger:
+        - platform: webhook
+          webhook_id: hc_weda
+          allowed_methods:
+            - POST
+          local_only: true
+      sensor:
+        - name: "Wetterstation Temperatur"
+          unique_id: weda_webhook_temp
+          state: "{{ trigger.json.temp_c | default(0) }}"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: "mdi:thermometer"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Gefühlt"
+          unique_id: weda_webhook_feels_like
+          state: "{{ trigger.json.feels_like_c | default(0) }}"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: "mdi:thermometer-lines"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Luftfeuchte"
+          unique_id: weda_webhook_humidity
+          state: "{{ trigger.json.humidity | default(0) }}"
+          unit_of_measurement: "%"
+          device_class: humidity
+          state_class: measurement
+          icon: "mdi:water-percent"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Innentemperatur"
+          unique_id: weda_webhook_indoor_temp
+          state: "{{ trigger.json.indoor_temp_c | default(0) }}"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: "mdi:home-thermometer"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Innen Feuchte"
+          unique_id: weda_webhook_indoor_humidity
+          state: "{{ trigger.json.indoor_humidity | default(0) }}"
+          unit_of_measurement: "%"
+          device_class: humidity
+          state_class: measurement
+          icon: "mdi:water-percent"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Wind"
+          unique_id: weda_webhook_wind
+          state: "{{ trigger.json.wind_kmh | default(0) }}"
+          unit_of_measurement: "km/h"
+          device_class: wind_speed
+          state_class: measurement
+          icon: "mdi:weather-windy"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+          attributes:
+            gust_kmh: "{{ trigger.json.wind_gust_kmh | default(0) }}"
+            direction: "{{ trigger.json.wind_dir_text | default('') }}"
+            beaufort: "{{ trigger.json.beaufort | default(0) }}"
+            beaufort_text: "{{ trigger.json.beaufort_text | default('') }}"
+
+        - name: "Wetterstation Luftdruck"
+          unique_id: weda_webhook_pressure
+          state: "{{ trigger.json.pressure_hpa | default(0) }}"
+          unit_of_measurement: "hPa"
+          device_class: atmospheric_pressure
+          state_class: measurement
+          icon: "mdi:gauge"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Regen heute"
+          unique_id: weda_webhook_rain_daily
+          state: "{{ trigger.json.rain_daily_mm | default(0) }}"
+          unit_of_measurement: "mm"
+          device_class: precipitation
+          state_class: total_increasing
+          icon: "mdi:weather-rainy"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Regen Monat"
+          unique_id: weda_webhook_rain_monthly
+          state: "{{ trigger.json.rain_monthly_mm | default(0) }}"
+          unit_of_measurement: "mm"
+          device_class: precipitation
+          state_class: total_increasing
+          icon: "mdi:weather-pouring"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Solar"
+          unique_id: weda_webhook_solar
+          state: "{{ trigger.json.solar_klux | default(0) }}"
+          unit_of_measurement: "klux"
+          device_class: illuminance
+          state_class: measurement
+          icon: "mdi:white-balance-sunny"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation UV-Index"
+          unique_id: weda_webhook_uv
+          state: "{{ trigger.json.uv_index | default(0) }}"
+          icon: "mdi:sun-wireless"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Taupunkt"
+          unique_id: weda_webhook_dewpoint
+          state: "{{ trigger.json.dewpoint_c | default(0) }}"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: "mdi:thermometer-water"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Klima-Tipp"
+          unique_id: weda_webhook_climate_advice
+          state: "{{ trigger.json.climate_advice | default('–') }}"
+          icon: "mdi:information"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
+
+        - name: "Wetterstation Frost-Status"
+          unique_id: weda_webhook_frost
+          state: "{{ trigger.json.frost_text | default('Kein Frost') }}"
+          icon: "mdi:snowflake"
+          availability: "{{ trigger.json.event == 'weather_data' }}"
