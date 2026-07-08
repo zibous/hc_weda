@@ -1,6 +1,7 @@
 # hc_weda v2
 
 Wetterstation-Integration für **Sainlogic WS3500** (Ecowitt-Protokoll).
+FastAPI-basierter HTTP-Receiver mit Echtzeit-Verarbeitung, SQLite-Langzeitarchiv und Wetter-Warnsystem.
 
 ## Features
 
@@ -8,9 +9,77 @@ Wetterstation-Integration für **Sainlogic WS3500** (Ecowitt-Protokoll).
 - 📊 **SQLite Database** mit ~1 Million historischen Messungen (seit April 2024)
 - 🔄 **MQTT Integration** mit deutschen Feldnamen
 - 🏠 **Home Assistant Discovery** + Webhooks
-- 📈 **Web Dashboard** (v1 Dashboard wird weiterverwendet)
+- 📈 **Web Dashboard** mit Zeitreihen, Tagesstatistiken und Vorhersage
 - 🔧 **Einheiten-Konvertierung** (Fahrenheit → Celsius, Inches → mm, MPH → km/h)
 - 🧮 **Berechnete Werte** (gefühlte Temperatur, Beaufort, Taupunkt, Lüftungsempfehlung)
+- ⚠️ **Wetter-Warnsystem** (Sturm, Starkregen, Frost) mit Hysterese
+- 🌤️ **Open-Meteo Forecast** (48h Vorhersage, kein API-Key nötig)
+- 📡 **KPI-Endpoint** für zentrales Übersichts-Dashboard
+- 🐳 **Docker-ready** mit Graceful Shutdown
+
+## Application Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           main.py (Lifespan)                                │
+│  1. SQLite init  2. DeviceManager  3. MQTT Discovery  4. Weather Alerts     │
+└──────────┬──────────────────────────────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          FastAPI Server (Port 5045)                          │
+├─────────────────┬───────────────────────┬───────────────────────────────────┤
+│  Weather        │  Dashboard API        │  KPI / Health                     │
+│  Receiver       │  /api/current         │  /api/kpidata                     │
+│  /weatherstation│  /api/today           │  /api/health                      │
+│  (GET/POST)     │  /api/range           │  /api/devices                     │
+│                 │  /api/stats           │                                   │
+│                 │  /api/forecast        │                                   │
+└────────┬────────┴───────────────────────┴───────────────────────────────────┘
+         │
+         │  Wetterstation sendet alle 60s
+         │  GET /weatherstation?tempf=68.5&humidity=65&...
+         ▼
+┌─────────────────────────────────────────────┐
+│        Sainlogic WS3500 Adapter             │
+│  1. Ecowitt-Format parsen (Query-Params)    │
+│  2. Validierung (EcowittValidator)          │
+│  3. Einheiten konvertieren (F→C, in→mm)     │
+│  4. Berechnete Werte (Beaufort, Taupunkt)   │
+│  5. WeatherReading erstellen                │
+└────────┬────────────────────────────────────┘
+         │
+         ├──────────────────────────────────────────────────────┐
+         │                                                      │
+         ▼                                                      ▼
+┌─────────────────────┐                          ┌──────────────────────────┐
+│  SQLite Database    │                          │  MQTT Broker             │
+│  data/weather.db    │                          │  hc_weda/wetterstation/  │
+│                     │                          │  (deutsche Feldnamen)    │
+│  • measurements     │                          └────────────┬─────────────┘
+│  • ~1M Datenpunkte  │                                       │
+│  • seit April 2024  │                                       ▼
+└─────────────────────┘                          ┌──────────────────────────┐
+         │                                       │  Home Assistant          │
+         │                                       │  • MQTT Discovery        │
+         ├───────────────────────┐               │  • Webhook Events        │
+         │                       │               │  • Wetter-Warnungen      │
+         ▼                       ▼               └──────────────────────────┘
+┌──────────────────┐  ┌──────────────────────┐
+│  Web Dashboard   │  │  Weather Alerts      │
+│  (Frontend SPA)  │  │  • Sturm (>50 km/h)  │
+│  • Zeitreihen    │  │  • Starkregen (>10mm) │
+│  • Statistiken   │  │  • Frost (≤0°C)      │
+│  • Forecast      │  │  • Hysterese + Cool. │
+└──────────────────┘  └──────────────────────┘
+         │
+         ▼
+┌──────────────────────┐
+│  Open-Meteo API      │
+│  48h Vorhersage      │
+│  (30min Cache, free) │
+└──────────────────────┘
+```
 
 ## Wetterstation
 
@@ -85,8 +154,17 @@ make status-app
 |----------|---------|-------------|
 | `/api/health` | GET | Health Check |
 | `/api/devices` | GET | Geräte-Status |
+| `/api/current` | GET | Aktueller Messwert |
+| `/api/today` | GET | Zeitreihen für heute |
+| `/api/today/summary` | GET | Tages-Zusammenfassung (Min/Max/Avg/Trend) |
+| `/api/range?from=&to=` | GET | Zeitreihen für Datumsbereich |
+| `/api/stats?from=&to=` | GET | Tages-Aggregation (30 Tage Default) |
+| `/api/rain/monthly` | GET | Monatliche Regensummen (13 Monate) |
+| `/api/forecast?hours=48` | GET | Open-Meteo Vorhersage |
+| `/api/dbstats` | GET | Datenbank-Statistiken |
+| `/api/kpidata` | GET | KPI für Übersichts-Dashboard |
 | `/weatherstation` | GET/POST | Weather Receiver (Ecowitt) |
-| `/` | GET | Dashboard |
+| `/` | GET | Dashboard (SPA) |
 
 ## Wetterdaten-Empfang
 
@@ -290,26 +368,47 @@ make logs
 hc_weda/
 ├── app/
 │   ├── adapters/
-│   │   ├── base.py                    # Basis-Adapter
-│   │   ├── sainlogic_ws3500.py        # Wetterstation-Adapter
+│   │   ├── base.py                    # Basis-Adapter (Abstract)
+│   │   ├── sainlogic_ws3500.py        # Wetterstation-Adapter (Konvertierung + Berechnung)
+│   │   ├── ecowitt_validator.py       # Eingabe-Validierung
 │   │   └── factory.py                 # Adapter-Factory
 │   ├── api/routes/
-│   │   ├── weather_receiver.py        # HTTP Receiver
-│   │   ├── devices.py                 # Geräte-API
-│   │   └── dashboard.py               # Dashboard-API
+│   │   ├── weather_receiver.py        # HTTP Receiver (/weatherstation)
+│   │   ├── dashboard.py              # Dashboard-API (/api/current, /today, /range, /stats)
+│   │   ├── devices.py                 # Geräte-API (/api/devices)
+│   │   ├── health.py                  # Health-Check (/api/health)
+│   │   └── kpi.py                     # KPI-Endpoint (/api/kpidata)
+│   ├── core/
+│   │   ├── config.py                  # Zentrale Konfiguration (.env)
+│   │   ├── ha_discovery.py            # Home Assistant MQTT Discovery
+│   │   ├── logging.py                 # Logging (RotatingFileHandler)
+│   │   ├── mqtt.py                    # MQTT Client
+│   │   └── webhook.py                 # HA Webhook Client
 │   ├── models/
-│   │   └── weather.py                 # Datenmodell
+│   │   └── weather.py                 # WeatherReading + DeviceInfo Dataclasses
+│   ├── schemas/
+│   │   └── kpi.py                     # KPI Pydantic Response Model
 │   ├── services/
-│   │   ├── database.py                # SQLite
-│   │   └── device_manager.py          # Geräte-Verwaltung
-│   └── main.py                        # FastAPI App
+│   │   ├── database.py                # SQLite DB (Init + CRUD)
+│   │   ├── weather_database.py        # Wetter-spezifische DB-Operationen
+│   │   ├── device_manager.py          # Geräte-Verwaltung (Config → Adapter)
+│   │   ├── weather_alerts.py          # Warnsystem (Sturm, Frost, Regen)
+│   │   ├── forecast.py                # Open-Meteo Vorhersage (30min Cache)
+│   │   ├── kpi_service.py             # KPI-Berechnung
+│   │   └── startup.py                 # App-Start (MQTT Status, Discovery, Webhook)
+│   └── main.py                        # FastAPI App + Lifespan
 ├── config/devices/
-│   └── wetterstation.yaml             # Geräte-Config
+│   └── wetterstation.yaml             # Geräte-Config (MQTT-Mapping, Schwellwerte)
 ├── data/
-│   └── weather.db                     # SQLite DB
+│   └── weather.db                     # SQLite DB (~1M Messungen)
+├── frontend/
+│   └── static/                        # Dashboard SPA (HTML/JS/CSS)
 ├── scripts/
-│   └── migrate_v1_to_v2.py            # Migrations-Script
-└── frontend/                          # v1 Dashboard (unverändert)
+│   └── migrate_v1_to_v2.py            # Migrations-Script (v1 → v2)
+├── docker-compose.yml
+├── Dockerfile
+├── Makefile
+└── .env
 ```
 
 ## Links
@@ -319,3 +418,36 @@ hc_weda/
 - **Weather Receiver**: http://10.1.1.119:8089/weatherstation
 - **MQTT Topic**: `hc_weda/wetterstation`
 - **Home Assistant Webhook**: `hc_weda`
+- **OpenAPI Docs**: http://10.1.1.119:5021/docs
+
+## Wetter-Warnsystem
+
+Das integrierte Warnsystem überwacht kontinuierlich alle eingehenden Messdaten und sendet bei Schwellwert-Überschreitung Warnungen via Webhook an Home Assistant.
+
+| Warnung | Schwellwert | Severity |
+|---------|-------------|----------|
+| **Sturm** | Wind > 50 km/h oder Böen > 70 km/h | warning |
+| **Starkregen** | Regenrate > 10 mm/h | warning |
+| **Frost** | Temperatur ≤ 0°C | warning |
+| **Frostgefahr** | Temperatur ≤ 3°C (> 0°C) | info |
+
+**Hysterese-Logik**: Warnungen bleiben mindestens 15 Minuten aktiv. Nach Deaktivierung gilt ein Cooldown von 5 Minuten (verhindert Flapping bei Grenzwerten).
+
+## Open-Meteo Vorhersage
+
+Die App holt stündliche Vorhersagedaten (48h) von der kostenlosen Open-Meteo API:
+
+- **Kein API-Key** erforderlich
+- **30-Minuten-Cache** verhindert unnötige Requests
+- **Thread-safe** mit Lock bei Cache-Miss
+- **Backoff** bei Rate-Limit (5 Min Pause nach HTTP 429)
+- **Fallback**: Bei Fehler wird letzter Cache zurückgegeben
+
+Enthaltene Vorhersage-Daten: Temperatur, Luftfeuchte, gefühlte Temperatur, Niederschlagswahrscheinlichkeit, Windgeschwindigkeit, Böen, Bewölkung, Luftdruck, UV-Index.
+
+## Requirements
+
+- Python 3.10+ (getestet mit 3.12)
+- MQTT Broker (Mosquitto empfohlen)
+- Sainlogic WS3500 oder kompatible Ecowitt-Station
+- SQLite (Zero-Config, im Container enthalten)
