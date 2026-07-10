@@ -468,3 +468,4 @@ Enthaltene Vorhersage-Daten: Temperatur, Luftfeuchte, gefühlte Temperatur, Nied
 - MQTT Broker (Mosquitto empfohlen)
 - Sainlogic WS3500 oder kompatible Ecowitt-Station
 - SQLite (Zero-Config, im Container enthalten)
+
