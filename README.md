@@ -3,6 +3,8 @@
 Wetterstation-Integration für **Sainlogic WS3500** (Ecowitt-Protokoll).
 FastAPI-basierter HTTP-Receiver mit Echtzeit-Verarbeitung, SQLite-Langzeitarchiv und Wetter-Warnsystem.
 
+![Screenshot der Anwendung](./docs/wetterdaten.png)
+
 ## Features
 
 - 🌡️ **HTTP Receiver** für Wetterstation (Ecowitt-Protokoll)
@@ -280,13 +282,13 @@ device:
   name: "Wetterstation Garten"
   type: "sainlogic-ws3500"
   location: "Garten"
-  
+
 datasource:
   type: "http_receiver"
   port: 8089
   url: "/weatherstation"
   format: "ecowitt"
-  
+
 mqtt:
   base_topic: "hc_weda/wetterstation"
   publish_fields:

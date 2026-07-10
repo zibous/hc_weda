@@ -134,7 +134,7 @@ automation:
           data:
             priority: high
             ttl: 0
-            
+
   - alias: "Wetter: Frost-Warnung"
     trigger:
       - platform: webhook
@@ -162,7 +162,7 @@ template:
         unique_id: weather_alert_storm
         state: "{{ states('sensor.hc_weda_alert_storm') == 'on' }}"
         device_class: safety
-        
+
       - name: "Wetter Frost-Warnung"
         unique_id: weather_alert_frost
         state: "{{ states('sensor.hc_weda_alert_frost') == 'on' }}"
