@@ -16,11 +16,11 @@ venv/
 ENV/
 
 # Database
-# *.db
-# *.db-shm
-# *.db-wal
-# *.sqlite
-# *.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
 
 # Logs
 logs/

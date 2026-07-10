@@ -119,6 +119,10 @@ backup: ## Create backup of data and logs
 	@tar -czf ~/backups/hc_weda_$(shell date +%Y%m%d_%H%M%S).tar.gz data/ logs/
 	@echo "Backup created in ~/backups/"
 
+db-schema: ## Schema als SQL ins Repo exportieren (ohne Daten)
+	@sqlite3 data/weather.db ".schema" > data/schema.sql
+	@echo "✓ Schema exportiert: data/schema.sql"
+
 backup-v1: ## Backup v1 database before migration
 	@if [ -f /dockerapps/apps_v1/hc_weda/data/history.db ]; then \
 		cp /dockerapps/apps_v1/hc_weda/data/history.db \
