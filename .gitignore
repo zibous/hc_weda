@@ -15,19 +15,14 @@ build/
 venv/
 ENV/
 
-# Database
-*.db
-*.db-shm
-*.db-wal
-*.sqlite
-*.sqlite3
-
 # Logs
 logs/
 *.log
 
-# Data
-# data/
+# Inhalt des data-Ordners ignorieren
+data/*
+
+# Die .gitkeep Datei explizit erlauben
 !data/.gitkeep
 
 # IDE
