@@ -20,7 +20,9 @@ logs/
 *.log
 
 # Inhalt des data-Ordners ignorieren
-data/*
+data/*.db
+data/*.db-shm
+data/*.db-wal
 
 # Die .gitkeep Datei explizit erlauben
 !data/.gitkeep
