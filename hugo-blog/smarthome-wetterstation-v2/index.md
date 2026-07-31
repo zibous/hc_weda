@@ -43,66 +43,20 @@ Die Vorteile gegenüber Wunderground, Ecowitt-Cloud & Co:
 
 Die Anwendung basiert auf FastAPI und arbeitet als passiver HTTP-Receiver: Die Wetterstation schickt die Daten, die App verarbeitet, speichert und verteilt sie.
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           main.py (Lifespan)                                │
-│  1. SQLite init  2. DeviceManager  3. MQTT Discovery  4. Weather Alerts     │
-└──────────┬──────────────────────────────────────────────────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          FastAPI Server (Port 5045)                         │
-├─────────────────┬───────────────────────┬───────────────────────────────────┤
-│  Weather        │  Dashboard API        │  KPI / Health                     │
-│  Receiver       │  /api/current         │  /api/kpidata                     │
-│  /weatherstation│  /api/today           │  /api/health                      │
-│  (GET/POST)     │  /api/range           │  /api/devices                     │
-│                 │  /api/stats           │                                   │
-│                 │  /api/forecast        │                                   │
-└────────┬────────┴───────────────────────┴───────────────────────────────────┘
-         │
-         │  Wetterstation sendet alle 60s
-         │  GET /weatherstation?tempf=68.5&humidity=65&...
-         ▼
-┌─────────────────────────────────────────────┐
-│        Sainlogic WS3500 Adapter             │
-│  1. Ecowitt-Format parsen (Query-Params)    │
-│  2. Validierung (EcowittValidator)          │
-│  3. Einheiten konvertieren (F→C, in→mm)     │
-│  4. Berechnete Werte (Beaufort, Taupunkt)   │
-│  5. WeatherReading erstellen                │
-└────────┬────────────────────────────────────┘
-         │
-         ├───────────────────────────────────────────┐
-         │                                           │
-         ▼                                           ▼
-┌─────────────────────┐               ┌──────────────────────────┐
-│  SQLite Database    │               │  MQTT Broker             │
-│  data/weather.db    │               │  hc_weda/wetterstation/  │
-│  ~1M Datenpunkte    │               │  (deutsche Feldnamen)    │
-└─────────────────────┘               └────────────┬─────────────┘
-         │                                         │
-         │                                         ▼
-         │                            ┌──────────────────────────┐
-         │                            │  Home Assistant          │
-         │                            │  • MQTT Discovery        │
-         │                            │  • Webhook Events        │
-         │                            │  • Wetter-Warnungen      │
-         ▼                            └──────────────────────────┘
-┌──────────────────┐  ┌──────────────────────┐
-│  Web Dashboard   │  │  Weather Alerts      │
-│  (Frontend SPA)  │  │  • Sturm (>50 km/h)  │
-│  Zeitreihen +    │  │  • Starkregen(>10mm) │
-│  Statistiken     │  │  • Frost (≤0°C)      │
-└──────────────────┘  │  • Hysterese         │
-         │            └──────────────────────┘
-         ▼
-┌──────────────────────┐
-│  Open-Meteo API      │
-│  48h Vorhersage      │
-│  (30min Cache)       │
-└──────────────────────┘
-```
+{{< mermaid >}}
+flowchart TD
+    Main["main.py (Lifespan)<br>SQLite · DeviceManager · MQTT · Alerts"] --> FastAPI["FastAPI Server :5045"]
+    FastAPI --> Receiver["Weather Receiver<br>/weatherstation (GET/POST)"]
+    FastAPI --> DashAPI["Dashboard API<br>/api/current · /api/today · /api/range"]
+    FastAPI --> KPI["KPI / Health<br>/api/kpidata · /api/forecast"]
+    Receiver -->|"alle 60s"| Adapter["Sainlogic WS3500 Adapter<br>Ecowitt parsen · Validieren<br>F→C, in→mm · WeatherReading"]
+    Adapter --> DB["SQLite Database<br>data/weather.db"]
+    Adapter --> MQTT["MQTT Broker<br>hc_weda/wetterstation/"]
+    MQTT --> HA["Home Assistant<br>MQTT Discovery · Webhooks · Warnungen"]
+    DB --> Dashboard["Web Dashboard (SPA)<br>Zeitreihen + Statistiken"]
+    DB --> Alerts["Weather Alerts<br>Sturm · Starkregen · Frost"]
+    DashAPI --> Forecast["Open-Meteo API<br>48h Vorhersage (30min Cache)"]
+{{< /mermaid >}}
 
 ---
 
