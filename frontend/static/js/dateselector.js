@@ -129,6 +129,8 @@ export function initDateSelector(container, onPeriodChange) {
     function fire(label, start, end) {
         savedLabel = label;
         localStorage.setItem(STORAGE_KEY, label);
+        localStorage.setItem(STORAGE_KEY + '-from', start);
+        localStorage.setItem(STORAGE_KEY + '-to', end);
         btn.textContent = label;
         drop.classList.add('hidden');
 
@@ -166,7 +168,11 @@ export function initDateSelector(container, onPeriodChange) {
             const y = savedLabel.replace('Jahr ', '');
             onPeriodChange(`${y}-01-01`, `${y}-12-31`);
         } else {
-            onPeriodChange(fromInput.value || fmtDate(new Date()), toInput.value || fmtDate(new Date()));
+            const savedFrom = localStorage.getItem(STORAGE_KEY + '-from') || fmtDate(new Date());
+            const savedTo = localStorage.getItem(STORAGE_KEY + '-to') || fmtDate(new Date());
+            fromInput.value = savedFrom;
+            toInput.value = savedTo;
+            onPeriodChange(savedFrom, savedTo);
         }
     }
 

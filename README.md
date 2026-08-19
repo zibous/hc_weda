@@ -1,6 +1,6 @@
 # 🌦️ hc_weda v2
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/zibous/hc_weda/releases)
+[![Version](https://img.shields.io/badge/version-2.5.0-blue.svg)](https://github.com/zibous/hc_weda/releases)
 [![License](https://img.shields.io/badge/license-Open%20Source-green.svg)](https://github.com/zibous/hc_weda)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=fff)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009485.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -23,7 +23,7 @@ FastAPI-basierter HTTP-Receiver mit Echtzeit-Verarbeitung, SQLite-Langzeitarchiv
 ## Features
 
 - 🌡️ **HTTP Receiver** für Wetterstation (Ecowitt-Protokoll)
-- 📊 **SQLite Database** mit ~1 Million historischen Messungen (seit April 2024)
+- 📊 **SQLite Database** mit Tages-Aggregation und Jahres-Archivierung
 - 🔄 **MQTT Integration** mit deutschen Feldnamen
 - 🏠 **Home Assistant Discovery** + Webhooks
 - 📈 **Web Dashboard** mit Zeitreihen, Tagesstatistiken und Vorhersage
@@ -31,6 +31,8 @@ FastAPI-basierter HTTP-Receiver mit Echtzeit-Verarbeitung, SQLite-Langzeitarchiv
 - 🧮 **Berechnete Werte** (gefühlte Temperatur, Beaufort, Taupunkt, Lüftungsempfehlung)
 - ⚠️ **Wetter-Warnsystem** (Sturm, Starkregen, Frost) mit Hysterese
 - 🌤️ **Open-Meteo Forecast** (48h Vorhersage, kein API-Key nötig)
+- 🗄️ **Daten-Tiering** – 90 Tage Rohdaten, Jahres-Archive, permanente Tagesaggregate
+- 🧹 **Nächtlicher Cleanup** – automatische Archivierung um 02:00 UTC
 - 📡 **KPI-Endpoint** für zentrales Übersichts-Dashboard
 - 🐳 **Docker-ready** mit Graceful Shutdown
 
@@ -44,7 +46,7 @@ FastAPI-basierter HTTP-Receiver mit Echtzeit-Verarbeitung, SQLite-Langzeitarchiv
            │
            ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          FastAPI Server (Port 5045)                          │
+│                          FastAPI Server (Port 5045)                         │
 ├─────────────────┬───────────────────────┬───────────────────────────────────┤
 │  Weather        │  Dashboard API        │  KPI / Health                     │
 │  Receiver       │  /api/current         │  /api/kpidata                     │
@@ -85,7 +87,7 @@ FastAPI-basierter HTTP-Receiver mit Echtzeit-Verarbeitung, SQLite-Langzeitarchiv
 ┌──────────────────┐  ┌──────────────────────┐
 │  Web Dashboard   │  │  Weather Alerts      │
 │  (Frontend SPA)  │  │  • Sturm (>50 km/h)  │
-│  • Zeitreihen    │  │  • Starkregen (>10mm) │
+│  • Zeitreihen    │  │  • Starkregen(>10mm) │
 │  • Statistiken   │  │  • Frost (≤0°C)      │
 │  • Forecast      │  │  • Hysterese + Cool. │
 └──────────────────┘  └──────────────────────┘
@@ -161,7 +163,7 @@ make status-app
 
 | Port | Beschreibung |
 |------|-------------|
-| **5021** | Dashboard (extern) |
+| **8090** | Dashboard (extern via Docker) |
 | **5045** | Dashboard (intern im Container) |
 | **8089** | Weather Receiver (Wetterstation → App) |
 
@@ -174,11 +176,12 @@ make status-app
 | `/api/current` | GET | Aktueller Messwert |
 | `/api/today` | GET | Zeitreihen für heute |
 | `/api/today/summary` | GET | Tages-Zusammenfassung (Min/Max/Avg/Trend) |
-| `/api/range?from=&to=` | GET | Zeitreihen für Datumsbereich |
-| `/api/stats?from=&to=` | GET | Tages-Aggregation (30 Tage Default) |
-| `/api/rain/monthly` | GET | Monatliche Regensummen (13 Monate) |
+| `/api/range?from=&to=` | GET | Zeitreihen für Datumsbereich (SQL-Sampling) |
+| `/api/stats?from=&to=` | GET | Tages-Aggregation (aus daily_stats Cache) |
+| `/api/rain/monthly?from=&to=` | GET | Monatliche Regensummen |
 | `/api/forecast?hours=48` | GET | Open-Meteo Vorhersage |
 | `/api/dbstats` | GET | Datenbank-Statistiken |
+| `/api/cleanup` | POST | Manueller Cleanup + Archivierung |
 | `/api/kpidata` | GET | KPI für Übersichts-Dashboard |
 | `/weatherstation` | GET/POST | Weather Receiver (Ecowitt) |
 | `/` | GET | Dashboard (SPA) |
@@ -222,9 +225,33 @@ hc_weda/wetterstation/
 ## Datenbank
 
 - **Datei**: `data/weather.db`
-- **Tabelle**: `measurements` (kompatibel mit v1)
+- **Tabelle**: `measurements` (90 Tage Rohdaten, kompatibel mit v1)
+- **Tabelle**: `daily_stats` (Tagesaggregate, permanent)
 - **Primärschlüssel**: `dateutc` (Zeitstempel)
 - **Felder**: Imperial (Rohdaten) + Metrisch (berechnet) + v2 Zusatzfelder
+
+### Daten-Tiering
+
+| Daten | Speicherort | Retention |
+|-------|-------------|-----------|
+| Rohdaten (1 min) | `data/weather.db` → `measurements` | 90 Tage |
+| Tagesaggregate | `data/weather.db` → `daily_stats` | Permanent |
+| Archiv pro Jahr | `data/history-YYYY.db` | Permanent |
+
+### Nächtlicher Cleanup (02:00 UTC)
+
+1. `daily_stats` für fehlende Tage aktualisieren
+2. Daten älter als 90 Tage → `history-YYYY.db` (Jahres-Archiv)
+3. Archivierte Rohdaten aus `measurements` löschen
+4. VACUUM bei Bedarf
+
+```bash
+# Manuell auslösen
+make db-cleanup
+
+# Oder direkt via API
+curl -X POST http://10.1.1.119:8090/api/cleanup
+```
 
 ### Statistiken anzeigen
 
@@ -232,6 +259,7 @@ hc_weda/wetterstation/
 make db-stats      # Anzahl, Zeitraum, Größe
 make db-latest     # Letzter Messwert
 make db-check      # Integrität prüfen
+make db-cleanup    # Archivierung + VACUUM
 ```
 
 ## Makefile Commands
@@ -262,6 +290,8 @@ make backup        # Backup erstellen
 make backup-v1     # v1 Backup
 make db-stats      # Statistiken
 make db-latest     # Letzter Messwert
+make db-cleanup    # Archivierung + VACUUM
+make db-vacuum     # Nur VACUUM
 ```
 
 ### Testing
@@ -390,8 +420,13 @@ hc_weda/
 │   │   ├── ecowitt_validator.py       # Eingabe-Validierung
 │   │   └── factory.py                 # Adapter-Factory
 │   ├── api/routes/
+│   │   ├── dashboard.py               # Fassade (bündelt Sub-Router)
+│   │   ├── _helpers.py                # Shared Utils (rows_to_series, calc_trend)
+│   │   ├── current.py                 # /api/current, /api/today/summary
+│   │   ├── history.py                 # /api/today, /api/range
+│   │   ├── stats.py                   # /api/stats, /api/rain/monthly
+│   │   ├── admin.py                   # /api/dbstats, /api/forecast, /api/cleanup
 │   │   ├── weather_receiver.py        # HTTP Receiver (/weatherstation)
-│   │   ├── dashboard.py              # Dashboard-API (/api/current, /today, /range, /stats)
 │   │   ├── devices.py                 # Geräte-API (/api/devices)
 │   │   ├── health.py                  # Health-Check (/api/health)
 │   │   └── kpi.py                     # KPI-Endpoint (/api/kpidata)
@@ -406,8 +441,12 @@ hc_weda/
 │   ├── schemas/
 │   │   └── kpi.py                     # KPI Pydantic Response Model
 │   ├── services/
-│   │   ├── database.py                # SQLite DB (Init + CRUD)
-│   │   ├── weather_database.py        # Wetter-spezifische DB-Operationen
+│   │   ├── queries/                   # DB-Zugriffe gekapselt
+│   │   │   ├── current.py             # get_latest, get_today_summary
+│   │   │   ├── history.py             # get_today_series, get_range_sampled
+│   │   │   └── stats.py              # get_daily_stats, get_monthly_rain
+│   │   ├── database.py                # SQLite DB (measurements + daily_stats)
+│   │   ├── cleanup.py                 # Nächtliche Archivierung + Scheduler
 │   │   ├── device_manager.py          # Geräte-Verwaltung (Config → Adapter)
 │   │   ├── weather_alerts.py          # Warnsystem (Sturm, Frost, Regen)
 │   │   ├── forecast.py                # Open-Meteo Vorhersage (30min Cache)
@@ -417,7 +456,11 @@ hc_weda/
 ├── config/devices/
 │   └── wetterstation.yaml             # Geräte-Config (MQTT-Mapping, Schwellwerte)
 ├── data/
-│   └── weather.db                     # SQLite DB (~1M Messungen)
+│   ├── weather.db                     # Haupt-DB (90 Tage + daily_stats)
+│   ├── history-2024.db                # Jahres-Archiv 2024
+│   ├── history-2025.db                # Jahres-Archiv 2025
+│   ├── history-2026.db                # Jahres-Archiv 2026 (laufend)
+│   └── history/                       # CSV-Exporte (Legacy v1)
 ├── frontend/
 │   └── static/                        # Dashboard SPA (HTML/JS/CSS)
 ├── scripts/
@@ -430,12 +473,12 @@ hc_weda/
 
 ## Links
 
-- **Dashboard**: http://10.1.1.119:5021
-- **Health**: http://10.1.1.119:5021/api/health
+- **Dashboard**: http://10.1.1.119:8090
+- **Health**: http://10.1.1.119:8090/api/health
 - **Weather Receiver**: http://10.1.1.119:8089/weatherstation
 - **MQTT Topic**: `hc_weda/wetterstation`
 - **Home Assistant Webhook**: `hc_weda`
-- **OpenAPI Docs**: http://10.1.1.119:5021/docs
+- **OpenAPI Docs**: http://10.1.1.119:8090/docs
 
 ## Wetter-Warnsystem
 
@@ -467,5 +510,5 @@ Enthaltene Vorhersage-Daten: Temperatur, Luftfeuchte, gefühlte Temperatur, Nied
 - Python 3.10+ (getestet mit 3.12)
 - MQTT Broker (Mosquitto empfohlen)
 - Sainlogic WS3500 oder kompatible Ecowitt-Station
-- SQLite (Zero-Config, im Container enthalten)
+- SQLite 3.25+ (für Window Functions, im Container enthalten)
 

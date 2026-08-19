@@ -148,6 +148,15 @@ db-vacuum: ## Vacuum database (optimize)
 	@sqlite3 data/weather.db "VACUUM;"
 	@echo "Database vacuumed"
 
+db-cleanup: ## Cleanup: Archiviert alte Daten + VACUUM
+	@echo "=== Cleanup starten ==="
+	@curl -sf -X POST http://10.1.1.119:8090/api/cleanup | python3 -m json.tool
+	@echo ""
+	@echo "=== VACUUM ==="
+	@sqlite3 data/weather.db "VACUUM;"
+	@echo "✓ Cleanup + VACUUM abgeschlossen"
+	@ls -lh data/weather.db data/history-*.db 2>/dev/null
+
 db-latest: ## Show latest weather reading
 	@sqlite3 data/weather.db "SELECT dateutc, temp_c, humidity, windspeed_kmh, pressure_hpa FROM measurements ORDER BY dateutc DESC LIMIT 1"
 

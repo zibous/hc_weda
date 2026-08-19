@@ -1,13 +1,12 @@
 # app/services/kpi_service.py
 """KPI-Service für hc_weda – liefert Wetter-Übersichtsdaten für das zentrale Dashboard."""
 
-import logging
 from datetime import datetime
 
 from app.core.config import KPI_APP_ID, KPI_APP_NAME, KPI_ICON, KPI_URL
 from app.core.logging import setup_logger
 from app.schemas.kpi import KpiHero, KpiIndicator, KpiMetric, KpiResponse
-from app.services.database import get_db, init_db, _db_instance
+from app.services.database import get_db
 
 log = setup_logger("kpi_service")
 
@@ -49,8 +48,6 @@ class KpiService:
         solar_klux = latest.get("solar_klux")
         uv_index = latest.get("uv_index")
         indoor_temp = latest.get("indoor_temp_c")
-        indoor_hum = latest.get("indoor_humidity")
-        dewpoint = latest.get("dewpoint_c")
 
         # Tages-Min/Max aus DB
         summary = db.get_daily_summary(today)

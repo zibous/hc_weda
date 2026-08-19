@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 """hc_weda — Wetterstation (Sainlogic WS3500)."""
 
-import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.api.routes.dashboard import router as dashboard_router
+from app.api.routes.devices import router as devices_router
+from app.api.routes.health import router as health_router
+from app.api.routes.kpi import router as kpi_router
+from app.api.routes.weather_receiver import router as weather_receiver_router
 from app.core.config import APP_NAME, APP_VERSION, HOST, PORT, HA_DISCOVERY_ON
 from app.core.logging import setup_logger
 from app.core.webhook import notify_ha
@@ -28,6 +32,9 @@ async def lifespan(app: FastAPI):
     # 1. Datenbank
     db = init_db()
     log.info("Datenbank initialisiert")
+
+    # 1b. Tages-Aggregation aktualisieren
+    db.rebuild_daily_stats()
 
     # 2. Device Manager
     device_manager = DeviceManager(db)
@@ -50,11 +57,16 @@ async def lifespan(app: FastAPI):
     app.state.device_manager = device_manager
     app.state.db = db
 
+    # 6. Nächtlicher Cleanup-Scheduler
+    from app.services.cleanup import start_cleanup_scheduler
+    cleanup_task = start_cleanup_scheduler(db)
+
     log.info("✅ Infrastruktur gestartet")
     yield
 
     # Shutdown
     log.info("Shutdown...")
+    cleanup_task.cancel()
     publish_app_status("offline", device_manager)
     notify_ha("app_stop")
     db.close()
@@ -77,13 +89,6 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(NoCacheMiddleware)
-
-# Routes
-from app.api.routes.health import router as health_router
-from app.api.routes.devices import router as devices_router
-from app.api.routes.dashboard import router as dashboard_router
-from app.api.routes.kpi import router as kpi_router
-from app.api.routes.weather_receiver import router as weather_receiver_router
 
 app.include_router(health_router, prefix="/api", tags=["health"])
 app.include_router(devices_router, prefix="/api", tags=["devices"])

@@ -12,7 +12,7 @@ Warnungen:
 """
 
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict
 
 from app.core.logging import setup_logger
 from app.core.webhook import notify_ha

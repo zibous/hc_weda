@@ -13,7 +13,6 @@ Mit 30-Min-Cache: max. 48 Requests/Tag → kein Problem.
 import time
 import threading
 import requests
-from typing import Optional
 
 from app.core.logging import setup_logger
 
@@ -203,9 +202,11 @@ _WMO_ICONS = {
 }
 
 def _wmo_text(code) -> str:
-    if code is None: return ""
+    if code is None:
+        return ""
     return _WMO_CODES.get(int(code), f"Code {code}")
 
 def _wmo_icon(code) -> str:
-    if code is None: return ""
+    if code is None:
+        return ""
     return _WMO_ICONS.get(int(code), "🌡️")

@@ -15,7 +15,6 @@ Dieser Endpoint:
 5. Sendet Webhook an Home Assistant
 """
 
-import json
 from typing import Dict, Optional
 
 from fastapi import APIRouter, Request

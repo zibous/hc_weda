@@ -14,7 +14,6 @@ Tabelle csv_imports:
     - Tracking für CSV-Import (verhindert Duplikate)
 """
 
-import csv
 import sqlite3
 import threading
 from datetime import datetime, timezone
@@ -104,6 +103,23 @@ class WeatherDB:
             );
             CREATE INDEX IF NOT EXISTS idx_dateutc ON measurements (dateutc);
             CREATE INDEX IF NOT EXISTS idx_date_local ON measurements (date_local);
+
+            CREATE TABLE IF NOT EXISTS daily_stats (
+                day             TEXT PRIMARY KEY,
+                temp_min        REAL,
+                temp_max        REAL,
+                temp_avg        REAL,
+                hum_min         REAL,
+                hum_max         REAL,
+                hum_avg         REAL,
+                wind_max        REAL,
+                gust_max        REAL,
+                rain_day        REAL,
+                pressure_min    REAL,
+                pressure_max    REAL,
+                solar_max       REAL,
+                uv_max          REAL
+            );
 
             CREATE TABLE IF NOT EXISTS csv_imports (
                 filename TEXT PRIMARY KEY,
@@ -269,6 +285,42 @@ class WeatherDB:
             "first_reading": first["first"] if first else None,
             "last_reading": last["last"] if last else None,
         }
+
+    # ------------------------------------------------------------------
+    # Tages-Aggregation (Cache)
+    # ------------------------------------------------------------------
+    def rebuild_daily_stats(self):
+        """Befüllt daily_stats für alle Tage, die noch fehlen (außer heute)."""
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        with self._lock:
+            self.conn.execute("""
+                INSERT OR IGNORE INTO daily_stats (day, temp_min, temp_max, temp_avg,
+                    hum_min, hum_max, hum_avg, wind_max, gust_max, rain_day,
+                    pressure_min, pressure_max, solar_max, uv_max)
+                SELECT
+                    substr(dateutc, 1, 10) AS day,
+                    ROUND(MIN(temp_c), 1),
+                    ROUND(MAX(temp_c), 1),
+                    ROUND(AVG(temp_c), 1),
+                    ROUND(MIN(humidity), 0),
+                    ROUND(MAX(humidity), 0),
+                    ROUND(AVG(humidity), 0),
+                    ROUND(MAX(windspeed_kmh), 1),
+                    ROUND(MAX(windgust_kmh), 1),
+                    ROUND(MAX(daily_rain_mm), 2),
+                    ROUND(MIN(pressure_hpa), 1),
+                    ROUND(MAX(pressure_hpa), 1),
+                    ROUND(MAX(solarradiation), 1),
+                    ROUND(MAX(uv), 0)
+                FROM measurements
+                WHERE temp_c IS NOT NULL
+                  AND substr(dateutc, 1, 10) < ?
+                  AND substr(dateutc, 1, 10) NOT IN (SELECT day FROM daily_stats)
+                GROUP BY day
+            """, (today,))
+            inserted = self.conn.total_changes
+            self.conn.commit()
+        log.info("daily_stats aktualisiert (%d neue Tage)", inserted)
 
     # ------------------------------------------------------------------
     # Lifecycle

@@ -32,9 +32,18 @@ export function timeOpts(extra = {}) {
   return JSON.parse(JSON.stringify({ ...CHART_OPTS_BASE, ...extra }));
 }
 
-export function makeLine(ctx, datasets, yLabel = '') {
+export function makeLine(ctx, datasets, yLabel = '', overrides = {}) {
   const opts = timeOpts();
   opts.scales.y.title = { display: !!yLabel, text: yLabel, color: C.muted };
+  if (overrides.scales?.x?.time) {
+    Object.assign(opts.scales.x.time, overrides.scales.x.time);
+    if (overrides.scales.x.time.displayFormats) {
+      Object.assign(opts.scales.x.time.displayFormats, overrides.scales.x.time.displayFormats);
+    }
+  }
+  if (overrides.scales?.x?.ticks) {
+    Object.assign(opts.scales.x.ticks, overrides.scales.x.ticks);
+  }
   return new Chart(ctx, { type: 'line', data: { datasets }, options: opts });
 }
 

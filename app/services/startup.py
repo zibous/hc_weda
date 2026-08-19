@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 
 from app.core import ha_discovery, mqtt
-from app.core.config import APP_NAME, APP_VERSION, HA_BASETOPIC, HA_DISCOVERY_ON
+from app.core.config import APP_NAME, APP_VERSION, HA_BASETOPIC
 from app.core.webhook import notify_ha
 from app.services.device_manager import DeviceManager
 

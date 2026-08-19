@@ -3,16 +3,14 @@
    ============================================================ */
 'use strict';
 
+import { initCardIcons } from './card-icons.js';
 import { initDateSelector } from './dateselector.js';
-import { isoAgo, isoToday } from './utils.js';
 import { initCurrentTab, refreshCurrent } from './tab-current.js';
-import { initTodayTab } from './tab-today.js';
 import { initForecastTab } from './tab-forecast.js';
 import { loadRange } from './tab-history.js';
 import { loadStats } from './tab-stats.js';
-import { C } from './charts.js';
-import { initCardIcons } from './card-icons.js';
-import { getAppleIcon } from './icons.js';
+import { initTodayTab } from './tab-today.js';
+import { isoAgo, isoToday } from './utils.js';
 
 // ── Theme Toggle & Synchronisation ──────────────────────────
 (function () {
@@ -80,11 +78,14 @@ function initNavDateSelector() {
   const activeTab = localStorage.getItem('activeTab') || 'current';
   container.style.display = (activeTab === 'history' || activeTab === 'stats') ? 'block' : 'none';
 
-  initDateSelector(container, (from, to) => {
+  const refresh = initDateSelector(container, (from, to) => {
     dsFrom = from;
     dsTo = to;
     reloadActiveDateTab();
   });
+
+  // Gespeicherten Zeitraum sofort anwenden
+  if (refresh) refresh();
 }
 
 function reloadActiveDateTab() {
